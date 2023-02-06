@@ -1,26 +1,44 @@
 version: '3.9'
 
 services:
+  reverse:
+    container_name: reverse
+    image: nginx:latest
+    restart: always
+    depends_on:
+      - api_service
+      # - auth_service
+    ports: 
+      - 80:80
+    networks:
+      - backend
+    volumes:
+      - ./proxy/nginx.conf:/etc/nginx/nginx.conf
+
   meilisearch:
     container_name: meilisearch
     image: getmeili/meilisearch:v0.30
-    ports:
-      - 7700:7700
+    # ports:
+    #   - "7700"
     volumes:
-      - /var/local/meilisearch:/data.ms
+      - /var/local/meilisearch:/meili_data
     restart: unless-stopped
     environment:
       - MEILI_MASTER_KEY=${MEILI_MASTER_KEY}
+    networks:
+      - backend
 
   rabbitmq:
     hostname: rabbitmq
     container_name: rabbitmq
     image: arm64v8/rabbitmq:3.11.5-management
-    ports:
-      - 5672:5672
-      - 15672:15672
+    # ports:
+    #   - 5672:5672
+    #   - 15672:15672
     volumes:
       - /var/local/rabbitmq:/var/lib/rabbitmq/mnesia/
+    networks:
+      - backend
   
   redis:
     container_name: redis
@@ -28,11 +46,13 @@ services:
     environment:
       - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL,CONFIG
       - ALLOW_EMPTY_PASSWORD=yes
-    ports:
-      - 6379:6379
+    # ports:
+    #   - 6379:6379
     volumes:
       - ./redis/redis.conf:/usr/local/etc/redis/redis.conf
     command: redis-server /usr/local/etc/redis/redis.conf
+    networks:
+      - backend
   
   auth_service:
     container_name: auth_service
@@ -45,7 +65,9 @@ services:
       - RABBITMQ_URL=${RABBITMQ_URL}
     depends_on:
       - rabbitmq
-  
+    networks:
+      - backend
+
   api_service: 
     container_name: api_service
     image: r6indexapi:latest
@@ -57,10 +79,18 @@ services:
       - REDIS_URL=${REDIS_URL}
       - REDIS_PASSWORD=${REDIS_PASSWORD}
       - API_URL=${API_URL}
-    ports:
-      - 8080:8080
+    # ports:
+    #   - "8080"
     depends_on:
       - meilisearch
       - rabbitmq
       - redis
       - auth_service
+    networks:
+      - backend
+
+networks:
+  backend:
+    driver: bridge
+  # frontend:
+  #   external: true
