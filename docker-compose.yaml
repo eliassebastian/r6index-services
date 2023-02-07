@@ -31,7 +31,7 @@ services:
   rabbitmq:
     hostname: rabbitmq
     container_name: rabbitmq
-    image: arm64v8/rabbitmq:3.11.5-management
+    image: rabbitmq:3.11.8-management
     # ports:
     #   - 5672:5672
     #   - 15672:15672
@@ -42,7 +42,7 @@ services:
   
   redis:
     container_name: redis
-    image: arm64v8/redis
+    image: redis:latest
     environment:
       - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL,CONFIG
       - ALLOW_EMPTY_PASSWORD=yes
