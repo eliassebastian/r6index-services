@@ -56,7 +56,7 @@ services:
   
   auth_service:
     container_name: auth_service
-    image: r6indexauth:latest
+    image: eliassebastian/r6index-auth:0.5.0
     restart: always 
     environment:
       - UBISOFT_USERNAME=${UBISOFT_USERNAME}
@@ -70,7 +70,7 @@ services:
 
   api_service: 
     container_name: api_service
-    image: r6indexapi:latest
+    image: eliassebastian/r6index-api:0.5.0
     restart: always 
     environment:
       - RABBITMQ_URL=${RABBITMQ_URL}
