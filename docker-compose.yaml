@@ -1,8 +1,9 @@
 version: '3.9'
 
 services:
-  reverse:
-    container_name: reverse
+  # Nginx Reverse Proxy
+  reverse_proxy:
+    container_name: reverse_proxy
     image: nginx:latest
     restart: always
     depends_on:
@@ -10,11 +11,29 @@ services:
       # - auth_service
     ports: 
       - 80:80
+      - 443:443
     networks:
       - backend
     volumes:
       - ./proxy/nginx.conf:/etc/nginx/nginx.conf
-
+      - ./www:/var/www:ro
+      # - ./conf.d:/etc/nginx/conf.d:ro
+      - ./ssl:/etc/nginx/ssl:ro
+      - ./snippets:/etc/nginx/snippets:ro
+  # Let's Encrypt / Certbot
+  certbot:
+    image: certbot/certbot:latest
+    container_name: certbot
+    depends_on:
+      - reverse_proxy
+    volumes:
+      - ./ssl:/etc/letsencrypt
+      - ./ssl-log:/var/log/letsencrypt
+      - ./www/.well-known:/var/www/.well-known
+    profiles:
+      - certbot
+    command: ["renew"]
+  # Meilisearch DB
   meilisearch:
     container_name: meilisearch
     image: getmeili/meilisearch:v1.0
@@ -27,7 +46,7 @@ services:
       - MEILI_MASTER_KEY=${MEILI_MASTER_KEY}
     networks:
       - backend
-
+  # RabbitMQ Events
   rabbitmq:
     hostname: rabbitmq
     container_name: rabbitmq
@@ -40,7 +59,7 @@ services:
       - ./data/rabbitmq:/var/lib/rabbitmq/mnesia/
     networks:
       - backend
-  
+  # Redis Cache
   redis:
     container_name: redis
     image: redis:latest
@@ -54,8 +73,8 @@ services:
       - ./redis/redis.conf:/usr/local/etc/redis/redis.conf
     command: redis-server /usr/local/etc/redis/redis.conf
     networks:
-      - backend
-  
+      - backend 
+  # Ubisoft Auth Service
   auth_service:
     container_name: auth_service
     image: eliassebastian/r6index-auth:0.5.1
@@ -69,7 +88,7 @@ services:
       - rabbitmq
     networks:
       - backend
-
+  # Web API
   api_service: 
     container_name: api_service
     image: eliassebastian/r6index-api:0.5.1
@@ -90,7 +109,6 @@ services:
       - auth_service
     networks:
       - backend
-
 networks:
   backend:
     driver: bridge
